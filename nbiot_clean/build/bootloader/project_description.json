@@ -1,0 +1,20 @@
+{
+    "project_name":       "bootloader",
+    "project_path":       "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/bootloader/subproject",
+    "build_dir":          "D:/ESP32/library_gnss/build/bootloader",
+    "config_file":        "D:/ESP32/library_gnss/sdkconfig",
+    "config_defaults":    "",
+    "app_elf":            "bootloader.elf",
+    "app_bin":            "bootloader.bin",
+    "git_revision":       "v4.2.4-dirty",
+    "target":             "esp32",
+    "phy_data_partition": "",
+    "monitor_baud" :      "115200",
+    "monitor_toolprefix": "xtensa-esp32-elf-",
+    "config_environment" : {
+        "COMPONENT_KCONFIGS" : "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/efuse/Kconfig;D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/esp32/Kconfig;D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/esp_common/Kconfig;D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/log/Kconfig;D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/spi_flash/Kconfig",
+        "COMPONENT_KCONFIGS_PROJBUILD" : "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/bootloader/Kconfig.projbuild;D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/esptool_py/Kconfig.projbuild;D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/partition_table/Kconfig.projbuild"
+    },
+    "build_components" : [ "bootloader", "bootloader_support", "efuse", "esp32", "esp_common", "esp_rom", "esptool_py", "log", "main", "micro-ecc", "partition_table", "soc", "spi_flash", "xtensa", "" ],
+    "build_component_paths" : [ "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/bootloader", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/bootloader_support", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/efuse", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/esp32", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/esp_common", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/esp_rom", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/esptool_py", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/log", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/bootloader/subproject/main", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/bootloader/subproject/components/micro-ecc", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/partition_table", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/soc", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/spi_flash", "D:/ESP32/Espressif/frameworks/esp-idf-v4.2.4/components/xtensa", "" ]
+}
