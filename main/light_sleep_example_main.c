@@ -18,24 +18,33 @@
 #include "esp_log.h"
 #include "driver/uart.h"
 
+
+static const char *TAG = "uart_nb_iot";
+
+#define BUF_SIZE (1024)
+#define RD_BUF_SIZE (BUF_SIZE)
+#define EX_UART_NUM UART_NUM_2
+
 int64_t t_before_us = 0;
 int64_t t_after_us = 0;
 static gpio_num_t pwr_key = 14;
 gpio_config_t io_conf;
-#define EX_UART_NUM UART_NUM_2
-static const char *TAG = "uart_events";
-
-#define BUF_SIZE (1024)
-#define RD_BUF_SIZE (BUF_SIZE)
 
 static char url[]      = "AT+SMCONF=\"URL\",\"demo.thingsboard.io\",1883";
 static char username[] = "AT+SMCONF=\"USERNAME\",\"VHT\"";
 static char clientid[] = "AT+SMCONF=\"CLIENTID\",\"VHT\"";
 static char password[] = "AT+SMCONF=\"PASSWORD\",\"123456\"";
-static char topic[]    = "AT+SMPUB=\"v1/devices/me/telemetry\"";
+static char topic_telemetry[]    = "AT+SMPUB=\"v1/devices/me/telemetry\"";
+static char topic_attributes[]    = "AT+SMPUB=\"v1/devices/me/attributes\"";
 
-static int pci, rsrp, rsrq, sinr, cellid;
-static float latitude, longitude;
+static int pci = 0;
+static int rsrp = 0;
+static int rsrq = 0;
+static int sinr = 0;
+static int cellid = 0;
+
+static float latitude = 0;
+static float longitude = 0;
 
 typedef enum
 {   
@@ -56,10 +65,10 @@ AT_flag;
 static QueueHandle_t uart0_queue; // queue de luu su kien uart
 
 typedef struct{
-    char buffer_rec[BUF_SIZE];
-    bool flag_have_rec;
+    char buffer_rec[BUF_SIZE];//buffer chua du lieu tra ve
+    bool flag_have_rec;//flag kiem tra co du lieu tra ve thong qua uart khong
 } connect_Simcom7090_t;
-connect_Simcom7090_t Simcom7090;
+connect_Simcom7090_t Simcom7090;//Simcom7090 la 1 bien theo kieu du lieu tu dinh nghia, trong do co chua buffer luu thong tin tra ve
 
 
 /*
@@ -99,6 +108,9 @@ AT_flag Read_response(uint16_t timewait, char *ATcommand){
     return AT_TIMEOUT;
 }
 
+/*
+Ham gpio_init_pwr cau hinh chan pwr 
+*/
 void gpio_init_pwr(gpio_config_t *io_conf, gpio_num_t gpio_num){
     io_conf->mode = GPIO_MODE_OUTPUT;
     io_conf->pin_bit_mask = 1 << gpio_num;
@@ -221,7 +233,7 @@ bool connect_mqtt(){
         if(send_and_read_response(username,1500,3) == true){
             if(send_and_read_response(password,1500,3) == true){
                 if(send_and_read_response(clientid,1500,3) == true){
-                    if(send_and_read_response("AT+SMCONN",3500,3) == true){
+                    if(send_and_read_response("AT+SMCONN",5000,3) == true){
                         return true;
                     }
                 }
@@ -256,8 +268,9 @@ void start_init_GNSS(uint16_t time_wait_res, uint8_t retry){
 Ham get_GNSS se lay toa do thong qua gnss
 */
 AT_flag get_GNSS(uint16_t time_wait_res, uint8_t retry){
+    //Delay khoang 15s thi moi tien hanh lay du lieu tu gnss
+    vTaskDelay(15000/portTICK_PERIOD_MS);
     while(retry--){
-        vTaskDelay(18000/portTICK_PERIOD_MS);
         Send_AT("AT+CGNSINF");
         vTaskDelay(time_wait_res/portTICK_PERIOD_MS);
         if (strstr((char *)Simcom7090.buffer_rec, "CGNSINF")) {
@@ -313,6 +326,33 @@ void turn_off_nbiot(uint8_t retry){
         }
         else{
             ESP_LOGI(TAG, "POWER OFF FAIL");
+            if(retry == 1){
+                ESP_LOGI(TAG, "POWER OFF URGENTLY");
+                Send_AT("AT+CPOWD=0");
+            }
+        }
+    } 
+}
+
+/*
+Ham turn_off_phone dung de tat mang di dong
+*/
+void turn_off_phone(uint8_t retry){
+    send_and_read_response("AT+CFUN=4",1500,retry);
+}
+/*
+Ham turn_on_phone dung de tat mang di dong
+*/
+void turn_on_phone(uint8_t retry){
+    while(retry--){
+        if(send_and_read_response("AT+CFUN=0",1500,2) == true){
+            if(send_and_read_response("AT+CFUN=1,1",2500,2) == true){
+                vTaskDelay(2500/portTICK_PERIOD_MS);
+                if(send_and_read_response("AT",1500,5) == true){
+                    send_and_read_response("ATE0",1500,2);
+                }
+                retry = 0;
+            }
         }
     }
 }
@@ -340,11 +380,11 @@ void turn_off_gnss(uint8_t retry){
 /* 
 Ham mqtt_send_message dung de gui ban tin toi broker
 */
-void mqtt_send_message(char *message, int length, int qos, int retain)
+void mqtt_send_message(char *message, int length, int qos, int retain, char *topic_need_send)
 {   
     char topic_set[256];
     uint8_t retry = 3;
-    sprintf(topic_set, "%s,%d,%d,%d", topic, length, qos, retain);
+    sprintf(topic_set, "%s,%d,%d,%d", topic_need_send, length, qos, retain);
     while(retry--){
         if(send_and_read_response(topic_set,2000,1)==true){
             ESP_LOGI(TAG,"Start send data\n");
@@ -355,9 +395,8 @@ void mqtt_send_message(char *message, int length, int qos, int retain)
     }
     vTaskDelay(100/portTICK_PERIOD_MS);
 }
-
 /*
-Ham khoi tao bat module simcom len bang cach dat chan pwr ve muc low. Gui cac lenh AT va ATE0
+Ham start_init tao bat module simcom len bang cach dat chan pwr ve muc low. Gui cac lenh AT va ATE0
 de kiem tra viec ket noi co thanh cong hay khong
 */
 bool start_init(int retry, uint16_t timewait_active){
@@ -372,8 +411,9 @@ bool start_init(int retry, uint16_t timewait_active){
     return false;
 }
 
-
-
+/*
+Ham uart_start dung de khoi tao UART
+*/
 void uart_start(){
     /* Configure parameters of an UART driver,
      * communication pins and install the driver */
@@ -402,11 +442,22 @@ void app_main(){
      while(1){
         t_before_us = esp_timer_get_time();
         start_init(2,1500);
-        //Sau khi khoi tao nb_iot thi se delay khoang 12s de doi module attach va register vao network
-        vTaskDelay(12000/portTICK_PERIOD_MS);
+        //Sau khi khoi tao nb_iot thi se delay khoang 2s de doi module on dinh
+        vTaskDelay(2000/portTICK_PERIOD_MS);
+        //tat mang di dong di
+        turn_off_phone(3);
+        vTaskDelay(2000/portTICK_PERIOD_MS);
         //Open GNSS boi lenh AT+CGNSPWR=1
         start_init_GNSS(2000,3);
-        vTaskDelay(1000/portTICK_PERIOD_MS);
+        vTaskDelay(500/portTICK_PERIOD_MS);
+        get_GNSS(2500,2);
+        //sau khi lay du lieu toa do thi tien hanh tat gnss di
+        turn_off_gnss(2);
+        //Doi khoang 3s sau thi tien hanh bat mang di dong len
+        vTaskDelay(3000/portTICK_PERIOD_MS);
+        turn_on_phone(2);
+        //Sau khi bat mang di dong len thi se doi khoang 5s de kiem tra co service hay khong
+        vTaskDelay(5000/portTICK_PERIOD_MS);
         if(check_serive(2500,3)== AT_CENG){
             // lenh "AT+CNACT=0,1" dung de Active the network 
             if(send_and_read_response("AT+CNACT=0,1",2000,3) == true){
@@ -416,36 +467,33 @@ void app_main(){
                         char sys_message[128];
                         sprintf(sys_message, "{\"pci\": %d,\"rsrp\": %d,\"rsrq\": %d,\"sinr\": %d,\"cellid\": %d}",pci,rsrp,rsrq,sinr,cellid);
                         int content_length = strlen(sys_message);
-                        mqtt_send_message(sys_message, content_length, 0, 1);
+                        mqtt_send_message(sys_message, content_length, 0, 1, topic_telemetry);
                     }
-
-                    get_GNSS(3000,2);
                     //neu co data ve toa do se gui ban tin ve broker
                     if (latitude != 0) {
                         char coo_message[128];
                         sprintf(coo_message, "{\"latitude\":%f,\"longitude\":%f}",latitude,longitude);
                         int content_length = strlen(coo_message);
-                        mqtt_send_message(coo_message, content_length, 0, 1);
+                        mqtt_send_message(coo_message, content_length, 0, 1, topic_attributes);
                     }
                     else{
                         //neu den day ma chua co thong tin ve toa do thi tien hanh su dung LBS
-                        get_CLBS(2500,2);
+                        get_CLBS(3000,2);
                         //neu lay duoc data thi gui thong tin toa do ve broker
                         if(latitude != 0){
                             char coo_message[128];
                             sprintf(coo_message, "{\"latitude\":%f,\"longitude\":%f}",latitude,longitude);
                             int content_length = strlen(coo_message);
-                            mqtt_send_message(coo_message, content_length, 0, 1);
+                            mqtt_send_message(coo_message, content_length, 0, 1, topic_attributes);
                         }
                     }
                 }
             }
-        }            
-        turn_off_gnss(2);
+        }         
         turn_off_nbiot(2);
         vTaskDelay(100/portTICK_PERIOD_MS);
         t_after_us = esp_timer_get_time();
         esp_sleep_enable_timer_wakeup(300000000 - (t_after_us - t_before_us));
         esp_light_sleep_start();
-     }
+    }
 }
