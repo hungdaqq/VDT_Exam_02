@@ -301,7 +301,7 @@ void turn_off_phone(uint8_t retry){
     send_and_read_response("AT+CFUN=4",1500,retry);
 }
 /*
-Ham turn_on_phone dung de tat mang di dong
+Ham turn_on_phone dung de bat mang di dong
 */
 void turn_on_phone(uint8_t retry){
     while(retry--){
