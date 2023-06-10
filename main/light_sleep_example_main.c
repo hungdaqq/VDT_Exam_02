@@ -35,7 +35,7 @@ static char username[] = "AT+SMCONF=\"USERNAME\",\"VHT\"";
 static char clientid[] = "AT+SMCONF=\"CLIENTID\",\"VHT\"";
 static char password[] = "AT+SMCONF=\"PASSWORD\",\"123456\"";
 static char topic_telemetry[]    = "AT+SMPUB=\"v1/devices/me/telemetry\"";
-static char topic_attributes[]    = "AT+SMPUB=\"v1/devices/me/attributes\"";
+static char topic_attributes[]   = "AT+SMPUB=\"v1/devices/me/attributes\"";
 
 static int pci = 0;
 static int rsrp = 0;
