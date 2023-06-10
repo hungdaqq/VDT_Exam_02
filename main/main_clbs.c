@@ -33,8 +33,8 @@ static char url[]      = "AT+SMCONF=\"URL\",\"demo.thingsboard.io\",1883";
 static char username[] = "AT+SMCONF=\"USERNAME\",\"VHT\"";
 static char clientid[] = "AT+SMCONF=\"CLIENTID\",\"VHT\"";
 static char password[] = "AT+SMCONF=\"PASSWORD\",\"123456\"";
-static char topic_telemetry[]    = "AT+SMPUB=\"v1/devices/me/telemetry\"";
-static char topic_attributes[]    = "AT+SMPUB=\"v1/devices/me/attributes\"";
+static char topic_telemetry[]  = "AT+SMPUB=\"v1/devices/me/telemetry\"";
+static char topic_attributes[] = "AT+SMPUB=\"v1/devices/me/attributes\"";
 
 static int pci = 0;
 static int rsrp = 0;
@@ -383,7 +383,7 @@ void app_main(){
         turn_off_nbiot(2);
         vTaskDelay(100/portTICK_PERIOD_MS);
         t_after_us = esp_timer_get_time();
-        esp_sleep_enable_timer_wakeup(150000000 - (t_after_us - t_before_us));
+        esp_sleep_enable_timer_wakeup(300000000 - (t_after_us - t_before_us));
         esp_light_sleep_start();
     }
 }
