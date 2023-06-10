@@ -29,6 +29,7 @@ int64_t t_before_us = 0;
 int64_t t_after_us = 0;
 static gpio_num_t pwr_key = 14;
 gpio_config_t io_conf;
+unsigned long sleep_interval = 300000000;
 
 static char url[]      = "AT+SMCONF=\"URL\",\"demo.thingsboard.io\",1883";
 static char username[] = "AT+SMCONF=\"USERNAME\",\"VHT\"";
@@ -493,7 +494,7 @@ void app_main(){
         turn_off_nbiot(2);
         vTaskDelay(100/portTICK_PERIOD_MS);
         t_after_us = esp_timer_get_time();
-        esp_sleep_enable_timer_wakeup(300000000 - (t_after_us - t_before_us));
+        esp_sleep_enable_timer_wakeup(sleep_interval - (t_after_us - t_before_us));
         esp_light_sleep_start();
     }
 }
